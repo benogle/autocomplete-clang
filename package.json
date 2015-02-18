@@ -1,0 +1,23 @@
+{
+  "name": "autocomplete-clang",
+  "main": "./lib/autocomplete-clang",
+  "version": "0.0.0",
+  "description": "Adds clang support to autocomplete+ suggestions",
+  "repository": "https://github.com/benogle/autocomplete-clang",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "coffeelint": ">=1.8.1"
+  },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "^1.1.0": "provide"
+      }
+    }
+  }
+}

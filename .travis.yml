@@ -1,0 +1,12 @@
+language: objective-c
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
+
+env:
+  - APM_TEST_PACKAGES="autocomplete-plus"
+
+git:
+  depth: 10

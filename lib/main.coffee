@@ -1,4 +1,4 @@
-SnippetsProvider = null
+ClangProvider = null
 
 module.exports =
   provider: null
@@ -12,5 +12,5 @@ module.exports =
 
   provide: ->
     ClangProvider ?= require('./clang-provider')
-    @provider =? new ClangProvider()
+    @provider ?= new ClangProvider()
     {@provider}

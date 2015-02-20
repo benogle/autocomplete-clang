@@ -3,7 +3,6 @@
 
 {Point, Range, BufferedProcess, TextEditor, CompositeDisposable} = require 'atom'
 path = require 'path'
-ClangFlags = require 'clang-flags'
 {existsSync} = require 'fs'
 
 module.exports =
@@ -58,11 +57,22 @@ class ClangProvider
     res
 
   lineRe: /COMPLETION: (.+) : (.+)$/
+  returnTypeRe: /\[#([^#]+)#\]/ig
+  argumentRe: /\<#([^#]+)#\>/ig
   convertCompletionLine: (s) ->
     match = s.match(@lineRe)
     if match?
       [line, completion, pattern] = match
-      {word:completion, label:pattern}
+      returnType = null
+      patternNoType = pattern.replace @returnTypeRe, (match, type) ->
+        returnType = type
+        ''
+      index = 0
+      replacementSnippet = patternNoType.replace @argumentRe, (match, arg) ->
+        index++
+        "${#{index}:#{arg}}"
+
+      {word: replacementSnippet, label: "returns #{returnType}"}
 
   handleCompletionResult: (result) ->
     outputLines = result.trim().split '\n'
@@ -80,11 +90,6 @@ class ClangProvider
     # std = atom.config.get "autocomplete-clang.std.#{language}"
     # args = args.concat ["-std=#{std}"] if std
     args = args.concat("-I#{i}" for i in @includePaths)
-    try
-      clangflags = ClangFlags.getClangFlags(atom.workspace.getActiveTextEditor().getPath())
-      args = args.concat clangflags if clangflags
-    catch error
-      console.log error
     args.push("-")
     args
 

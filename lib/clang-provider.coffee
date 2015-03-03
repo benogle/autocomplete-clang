@@ -7,10 +7,9 @@ path = require 'path'
 
 module.exports =
 class ClangProvider
-  id: 'autocomplete-clang-provider'
   selector: '.source.cpp, .source.c, .source.objc, .source.objcpp'
-  providerblacklist:
-    'autocomplete-plus-fuzzyprovider': '.source.cpp, .source.c, .source.objc, .source.objcpp'
+  inclusionPriority: 1
+  excludeLowerPriority: true
 
   clangCommand: "clang"
   includePaths: [".", ".."]
@@ -21,12 +20,12 @@ class ClangProvider
     'source.objc': 'objective-c'
     'source.objcpp': 'objective-c++'
 
-  requestHandler: ({editor, scope, position}) ->
-    language = LanguageUtil.getSourceScopeLang(@scopeSource, scope.getScopesArray())
-    prefix = LanguageUtil.prefixAtPosition(editor, position)
-    symbolPosition = LanguageUtil.nearestSymbolPosition(editor, position) ? position
+  getSuggestions: ({editor, scopeDescriptor, bufferPosition}) ->
+    language = LanguageUtil.getSourceScopeLang(@scopeSource, scopeDescriptor.getScopesArray())
+    prefix = LanguageUtil.prefixAtPosition(editor, bufferPosition)
+    symbolPosition = LanguageUtil.nearestSymbolPosition(editor, bufferPosition) ? bufferPosition
 
-    # console.log "'#{prefix}'", position, language
+    # console.log "'#{prefix}'", bufferPosition, language
     if language?
       @codeCompletionAt(editor, symbolPosition.row, symbolPosition.column, language).then (suggestions) =>
         @filterForPrefix(suggestions, prefix)
@@ -51,8 +50,8 @@ class ClangProvider
   filterForPrefix: (suggestions, prefix) ->
     res = []
     for suggestion in suggestions
-      if suggestion.word.startsWith(prefix)
-        suggestion.prefix = prefix
+      if (suggestion.snippet or suggestion.text).startsWith(prefix)
+        suggestion.replacementPrefix = prefix
         res.push(suggestion)
     res
 
@@ -68,11 +67,16 @@ class ClangProvider
         returnType = type
         ''
       index = 0
-      replacementSnippet = patternNoType.replace @argumentRe, (match, arg) ->
+      replacement = patternNoType.replace @argumentRe, (match, arg) ->
         index++
         "${#{index}:#{arg}}"
 
-      {word: replacementSnippet, label: "returns #{returnType}"}
+      suggestion = {label: "returns #{returnType}"}
+      if index > 0
+        suggestion.snippet = replacement
+      else
+        suggestion.text = replacement
+      suggestion
 
   handleCompletionResult: (result) ->
     outputLines = result.trim().split '\n'
@@ -103,8 +107,8 @@ LanguageUtil =
       return scopeSource[scope] if scope of scopeSource
     null
 
-  prefixAtPosition: (editor, position) ->
-    line = editor.getTextInRange([[position.row, 0], position])
+  prefixAtPosition: (editor, bufferPosition) ->
+    line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
 
     end = line.length
     start = end - 1
@@ -114,14 +118,14 @@ LanguageUtil =
 
     line.substring(start + 1, end)
 
-  nearestSymbolPosition: (editor, position) ->
+  nearestSymbolPosition: (editor, bufferPosition) ->
     methodCall = "\\[([\\w_-]+) (?:[\\w_-]+)?"
     propertyAccess = "([\\w_-]+)\\.(?:[\\w_-]+)?"
     regex = new RegExp("(?:#{propertyAccess})|(?:#{methodCall})$", 'i')
 
-    line = editor.getTextInRange([[position.row, 0], position])
+    line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
     matches = line.match(regex)
     if matches
       symbol = matches[1] ? matches[2]
       symbolColumn = matches[0].indexOf(symbol) + symbol.length + (line.length - matches[0].length)
-      new Point(position.row, symbolColumn)
+      new Point(bufferPosition.row, symbolColumn)

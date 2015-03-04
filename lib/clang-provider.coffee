@@ -108,15 +108,9 @@ LanguageUtil =
     null
 
   prefixAtPosition: (editor, bufferPosition) ->
+    regex = /[\w0-9_-]+$/ # whatever your prefix regex might be
     line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
-
-    end = line.length
-    start = end - 1
-    while start >= 0
-      break unless /[\w0-9_-]/i.test(line[start])
-      start--
-
-    line.substring(start + 1, end)
+    line.match(regex)?[0] or ''
 
   nearestSymbolPosition: (editor, bufferPosition) ->
     methodCall = "\\[([\\w_-]+) (?:[\\w_-]+)?"

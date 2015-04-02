@@ -71,11 +71,13 @@ class ClangProvider
         index++
         "${#{index}:#{arg}}"
 
-      suggestion = {label: "returns #{returnType}"}
+      suggestion = {leftLabel: returnType}
       if index > 0
         suggestion.snippet = replacement
+        suggestion.type = 'method'
       else
         suggestion.text = replacement
+        suggestion.type = 'property'
       suggestion
 
   handleCompletionResult: (result) ->
